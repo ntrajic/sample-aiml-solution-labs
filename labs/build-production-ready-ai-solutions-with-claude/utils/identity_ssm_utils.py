@@ -18,7 +18,7 @@ username = "testuser"
 secret_name = "returns_refunds_agent"
 
 role_name = f"ReturnsRefundsAssistantBedrockAgentCoreRole-{REGION}"
-policy_name = f"ReturnsRefundsAssistantBedrockAgentCoreRole-{REGION}"
+policy_name = f"ReturnsRefundsAssistantBedrockAgentCorePolicy-{REGION}"
 
 
 def get_ssm_parameter(name: str, with_decryption: bool = True) -> str:
