@@ -10,14 +10,10 @@ seaborn==0.13.2
 joblib==1.5.1
 requests>=2.32.4
 scikit-learn==1.7.0
-uv==0.8.6
-mem0ai==0.1.114
-opensearch-py
+uv==0.9.5
 ddgs==9.3.1
 faiss-cpu==1.11.0
 sagemaker==2.249.0
 openai==1.99.3
 aiohttp==3.12.15
 boto3
-bedrock-agentcore==0.1.1
-bedrock-agentcore-starter-toolkit==0.1.5
