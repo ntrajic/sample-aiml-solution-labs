@@ -4,7 +4,7 @@ strands-agents
 strands-agents-tools
 weasyprint
 bedrock-agentcore>=0.1.2
-bedrock-agentcore-starter-toolkit==0.1.5
+bedrock-agentcore-starter-toolkit>=0.1.22
 aws-opentelemetry-distro
 ddgs
 aws-opentelemetry-distro~=0.10.1
