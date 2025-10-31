@@ -194,7 +194,7 @@ def handle_delete(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def get_database_connection(properties: Dict[str, Any]) -> psycopg2.extensions.connection:
+def get_database_connection(properties: Dict[str, Any]):
     """
     Establish connection to Aurora PostgreSQL database.
     
@@ -262,7 +262,7 @@ def get_database_credentials(secret_arn: str) -> Dict[str, str]:
         raise
 
 
-def enable_pgvector_extension(cursor: psycopg2.extensions.cursor) -> None:
+def enable_pgvector_extension(cursor) -> None:
     """
     Enable the pgvector extension in the database.
     
@@ -288,7 +288,7 @@ def enable_pgvector_extension(cursor: psycopg2.extensions.cursor) -> None:
         logger.info("pgvector extension already exists")
 
 
-def create_vector_store_table(cursor: psycopg2.extensions.cursor) -> None:
+def create_vector_store_table(cursor) -> None:
     """
     Create the vector_store table with the specified schema.
     
@@ -334,7 +334,7 @@ def create_vector_store_table(cursor: psycopg2.extensions.cursor) -> None:
         logger.info("vector_store table already exists")
 
 
-def create_vector_indexes(cursor: psycopg2.extensions.cursor) -> None:
+def create_vector_indexes(cursor) -> None:
     """
     Create HNSW indexes for vector similarity search.
     
@@ -376,7 +376,7 @@ def create_vector_indexes(cursor: psycopg2.extensions.cursor) -> None:
             logger.info(f"Vector index already exists: {index_name}")
 
 
-def create_filter_indexes(cursor: psycopg2.extensions.cursor) -> None:
+def create_filter_indexes(cursor) -> None:
     """
     Create B-tree indexes for filtering operations.
     

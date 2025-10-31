@@ -80,12 +80,49 @@ The included `samples-web-crawl.csv` contains 10 sample documents covering:
 
 ## Testing the Pipeline
 
-After uploading sample data:
+### 1. Upload Sample Data
 
-1. **Trigger Sync Lambda**: Use the sync Lambda to process the uploaded documents
-2. **Monitor SQS Queue**: Check the ingestion queue for processing status
-3. **Verify Database**: Query the Aurora database to confirm vector storage
-4. **Test Retrieval**: Use the retrieval Lambda to search for similar documents
+First, upload sample documents to the S3 bucket:
+
+```bash
+python validation/scripts/upload_sample_data.py
+```
+
+### 2. Test Sync Lambda
+
+Trigger the sync Lambda to process uploaded documents:
+
+```bash
+# Auto-detect function name and use default bucket
+python validation/scripts/test_sync_lambda.py
+
+# Test specific S3 prefix
+python validation/scripts/test_sync_lambda.py --s3-prefix "documents/"
+
+# Asynchronous invocation (fire and forget)
+python validation/scripts/test_sync_lambda.py --async
+```
+
+### 3. Monitor Processing
+
+After triggering sync:
+
+1. **Monitor SQS Queue**: Check the ingestion queue for processing status
+2. **Verify Database**: Query the Aurora database to confirm vector storage
+3. **Test Retrieval**: Use the retrieval Lambda to search for similar documents
+
+### Complete Test Workflow
+
+```bash
+# 1. Upload sample data
+python validation/scripts/upload_sample_data.py
+
+# 2. Trigger sync Lambda to queue documents for processing
+python validation/scripts/test_sync_lambda.py
+
+# 3. Check results (documents should be processed by ingestion Lambda)
+# Use AWS Console to monitor SQS queue and Aurora database
+```
 
 ## File Structure
 
@@ -94,7 +131,8 @@ validation/
 ├── README.md                    # This file
 ├── requirements.txt             # Python dependencies
 ├── scripts/
-│   └── upload_sample_data.py   # Sample data upload script
+│   ├── upload_sample_data.py   # Sample data upload script
+│   └── test_sync_lambda.py     # Sync Lambda test script
 └── sample_data/
     └── samples-web-crawl.csv   # Sample CSV data
 ```

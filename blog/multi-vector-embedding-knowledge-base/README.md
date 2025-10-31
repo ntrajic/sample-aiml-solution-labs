@@ -2,6 +2,36 @@
 
 A scalable vector knowledge base system built on Amazon RDS Aurora PostgreSQL with pgvector extension, featuring multi-embedding support, automated document ingestion, and secure retrieval through Amazon Bedrock AgentCore Gateway.
 
+## 🤖 Built with Kiro AI
+
+This project was developed using **Kiro's Spec Mode**, an AI-powered development workflow that transforms ideas into production-ready code through structured specification-driven development.
+
+### How This Code Was Created
+
+1. **Requirements Gathering**: Started with a rough idea for a vector knowledge base system
+2. **Specification Development**: Used Kiro to create detailed requirements following EARS (Easy Approach to Requirements Syntax) patterns
+3. **Design Documentation**: Generated comprehensive architecture and implementation design
+4. **Task Planning**: Created an actionable implementation plan with incremental development tasks
+5. **Code Generation**: Kiro implemented each task systematically, building the complete system
+
+### Spec Documentation
+
+The complete development specification is available in the `.kiro/specs/aurora-vector-kb/` directory:
+
+- **[📋 Requirements](/.kiro/specs/aurora-vector-kb/requirements.md)**: Detailed functional requirements with user stories and acceptance criteria
+- **[🏗️ Design](/.kiro/specs/aurora-vector-kb/design.md)**: Comprehensive system architecture, API interfaces, and implementation details  
+- **[✅ Tasks](/.kiro/specs/aurora-vector-kb/tasks.md)**: Complete implementation plan with task breakdown and completion status
+
+These documents provide insight into the systematic approach used to build this system and can serve as a reference for understanding the codebase architecture and design decisions.
+
+### Key Benefits of Spec-Driven Development
+
+- **Systematic Approach**: Each feature was planned, designed, and implemented methodically
+- **Documentation-First**: Requirements and design were established before coding began
+- **Incremental Development**: Complex features were broken down into manageable tasks
+- **Quality Assurance**: Each component was validated against requirements during implementation
+- **Maintainable Code**: Well-structured codebase with clear separation of concerns
+
 ## Architecture Overview
 
 This system provides:
@@ -31,25 +61,72 @@ This system provides:
    ```bash
    pip install -r requirements.txt
    ```
+4. Prepare Lambda layer dependencies:
+   
+   **Linux/macOS:**
+   ```bash
+   ./scripts/prepare-lambda-layer.sh
+   ```
+   
+   **Windows:**
+   ```cmd
+   scripts\prepare-lambda-layer.bat
+   ```
+   
+   This script installs the required Python packages (psycopg2-binary, tiktoken, boto3) for the Lambda layer that enables PostgreSQL connectivity. The dependencies are installed locally and excluded from version control.
 
 ## Deployment
+
+### Prerequisites Check
+
+Before deploying, ensure you have:
+- AWS CLI configured with appropriate permissions
+- Python 3.11+ installed
+- Lambda layer dependencies prepared (see Installation step 4)
+
+### Deploy Steps
 
 1. Bootstrap CDK (first time only):
    ```bash
    cdk bootstrap
    ```
 
-2. Deploy the stack:
+2. Prepare Lambda layer (if not done during installation):
+   
+   **Linux/macOS:**
+   ```bash
+   ./scripts/prepare-lambda-layer.sh
+   ```
+   
+   **Windows:**
+   ```cmd
+   scripts\prepare-lambda-layer.bat
+   ```
+
+3. Deploy the stack:
    ```bash
    cdk deploy
    ```
 
-3. To destroy the stack:
+4. To destroy the stack:
    ```bash
    cdk destroy
    ```
 
    **Note**: All resources are configured with `RemovalPolicy.DESTROY` for development environments, ensuring complete cleanup when the stack is destroyed. For production deployments, consider changing removal policies for critical resources like Cognito User Pools and Secrets Manager secrets to `RemovalPolicy.RETAIN`.
+
+### Troubleshooting Deployment
+
+**Lambda Layer Issues:**
+- If you get layer-related errors, run the layer preparation script to reinstall dependencies:
+  - Linux/macOS: `./scripts/prepare-lambda-layer.sh`
+  - Windows: `scripts\prepare-lambda-layer.bat`
+- Ensure you have pip3 installed and internet connectivity for package downloads
+- The layer dependencies are not included in version control and must be prepared locally
+
+**Permission Issues:**
+- Verify your AWS credentials have sufficient permissions for creating VPC, RDS, Lambda, and other resources
+- Check that your AWS account has service limits available for the resources being created
 
 ## Configuration
 
@@ -133,6 +210,17 @@ After deployment, the system provides:
 4. Vector similarity search with multiple embedding types
 5. Secure API access through JWT authentication
 6. Integration with Strands Agents through AgentCore Gateway
+
+## Testing
+
+For comprehensive testing instructions, validation scripts, and sample data, see **[📋 Testing Guide](/validation/README.md)**.
+
+The validation directory includes:
+- **Test Scripts**: Automated testing for all Lambda functions
+- **Sample Data**: Example documents and metadata for testing
+- **Vector Search Testing**: Scripts to test all four search modes (content similarity, metadata similarity, hybrid similarity, filter and search)
+- **Upload Utilities**: Tools for uploading test documents to S3
+- **Usage Examples**: Complete examples demonstrating system capabilities
 
 ## Development
 

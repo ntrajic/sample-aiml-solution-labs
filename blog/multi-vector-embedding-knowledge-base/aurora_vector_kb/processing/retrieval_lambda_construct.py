@@ -1,8 +1,8 @@
 """
-Ingestion Lambda Construct
+Vector Retrieval Lambda Construct
 
-This construct creates the Lambda function for document ingestion processing,
-including IAM roles, environment variables, and SQS event source mapping.
+This construct creates the Lambda function for vector search and retrieval operations,
+including IAM roles, environment variables, and performance optimizations.
 """
 
 from typing import List
@@ -11,25 +11,23 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as iam,
     aws_ec2 as ec2,
-    aws_sqs as sqs,
     aws_secretsmanager as secretsmanager,
     aws_rds as rds,
-    aws_lambda_event_sources as lambda_event_sources,
     Duration,
     CfnOutput,
     Tags
 )
 
 
-class IngestionLambdaConstruct(Construct):
+class RetrievalLambdaConstruct(Construct):
     """
-    Construct for the document ingestion Lambda function.
+    Construct for the vector retrieval Lambda function.
     
     Creates:
-    - Lambda function for document processing and vector storage
+    - Lambda function for vector search and retrieval operations
     - IAM role with necessary permissions
-    - SQS event source mapping
     - Environment variables for configuration
+    - Performance optimizations for vector operations
     """
 
     def __init__(
@@ -38,7 +36,6 @@ class IngestionLambdaConstruct(Construct):
         construct_id: str,
         vpc: ec2.Vpc,
         lambda_security_group: ec2.SecurityGroup,
-        ingestion_queue: sqs.Queue,
         database_credentials_secret: secretsmanager.Secret,
         aurora_cluster: rds.DatabaseCluster,
         postgresql_layer,
@@ -48,75 +45,31 @@ class IngestionLambdaConstruct(Construct):
 
         self.vpc = vpc
         self.lambda_security_group = lambda_security_group
-        self.ingestion_queue = ingestion_queue
         self.database_credentials_secret = database_credentials_secret
         self.aurora_cluster = aurora_cluster
         self.postgresql_layer = postgresql_layer
 
-        # Create IAM role for the ingestion Lambda function
+        # Create IAM role for the retrieval Lambda function
         self._create_lambda_role()
         
         # Create the Lambda function
         self._create_lambda_function()
         
-        # Configure SQS event source mapping
-        self._configure_event_source()
-        
         # Create outputs
         self._create_outputs()
 
     def _create_lambda_role(self) -> None:
-        """Create IAM role for the ingestion Lambda function."""
+        """Create IAM role for the retrieval Lambda function."""
         self.lambda_role = iam.Role(
             self,
-            "IngestionLambdaRole",
+            "RetrievalLambdaRole",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
-            description="IAM role for Aurora Vector KB Ingestion Lambda function",
+            description="IAM role for Aurora Vector KB Retrieval Lambda function",
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AWSLambdaVPCAccessExecutionRole"
                 )
             ]
-        )
-
-        # Add permissions for S3 access (read documents and list bucket)
-        self.lambda_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "s3:GetObject",
-                    "s3:GetObjectVersion"
-                ],
-                resources=[
-                    "arn:aws:s3:::*/*"  # Allow access to any S3 object
-                ]
-            )
-        )
-        
-        # Add permissions for S3 bucket listing
-        self.lambda_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "s3:ListBucket"
-                ],
-                resources=[
-                    "arn:aws:s3:::*"  # Allow listing any S3 bucket
-                ]
-            )
-        )
-
-        # Add permissions for SQS queue access
-        self.lambda_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "sqs:ReceiveMessage",
-                    "sqs:DeleteMessage",
-                    "sqs:GetQueueAttributes"
-                ],
-                resources=[self.ingestion_queue.queue_arn]
-            )
         )
 
         # Add permissions for Bedrock access (Titan embeddings)
@@ -159,20 +112,20 @@ class IngestionLambdaConstruct(Construct):
             )
         )
 
-        Tags.of(self.lambda_role).add("Component", "Processing")
+        Tags.of(self.lambda_role).add("Component", "Retrieval")
 
     def _create_lambda_function(self) -> None:
-        """Create the ingestion Lambda function."""
+        """Create the retrieval Lambda function."""
         self.lambda_function = _lambda.Function(
             self,
-            "IngestionLambdaFunction",
+            "RetrievalLambdaFunction",
             runtime=_lambda.Runtime.PYTHON_3_11,
-            handler="ingestion_lambda.lambda_handler",
+            handler="retrieval_lambda.lambda_handler",
             code=_lambda.Code.from_asset("aurora_vector_kb/processing"),
             role=self.lambda_role,
-            timeout=Duration.minutes(15),  # Maximum Lambda timeout
-            memory_size=3008,  # Maximum memory for better performance
-            description="Lambda function for document ingestion, processing, and vector storage",
+            timeout=Duration.minutes(5),  # 5 minutes for complex searches
+            memory_size=3008,  # Maximum memory for optimal performance
+            description="Lambda function for vector search and retrieval operations",
             
             # Add PostgreSQL layer
             layers=[self.postgresql_layer],
@@ -190,44 +143,33 @@ class IngestionLambdaConstruct(Construct):
                 "DB_HOST": self.aurora_cluster.cluster_endpoint.hostname,
                 "DB_PORT": str(self.aurora_cluster.cluster_endpoint.port),
                 "DB_NAME": "vector_kb",
+                "BEDROCK_REGION": "us-west-2",
                 "LOG_LEVEL": "INFO"
             },
             
-            # Reserved concurrency to control costs and database connections
-            reserved_concurrent_executions=10,
+            # Reserved concurrency for performance management
+            reserved_concurrent_executions=50,
             
             # Retry configuration
-            retry_attempts=0  # SQS will handle retries
+            retry_attempts=0  # Let applications handle retries
         )
 
-        Tags.of(self.lambda_function).add("Component", "Processing")
-
-    def _configure_event_source(self) -> None:
-        """Configure SQS event source mapping for the Lambda function."""
-        self.event_source_mapping = self.lambda_function.add_event_source(
-            lambda_event_sources.SqsEventSource(
-                queue=self.ingestion_queue,
-                batch_size=1,  # Process one document at a time for better error handling
-                max_batching_window=Duration.seconds(5),  # Small batching window
-                report_batch_item_failures=True,  # Enable partial batch failure reporting
-                max_concurrency=5  # Limit concurrent executions to manage database load
-            )
-        )
+        Tags.of(self.lambda_function).add("Component", "Retrieval")
 
     def _create_outputs(self) -> None:
-        """Create CloudFormation outputs for the ingestion Lambda."""
+        """Create CloudFormation outputs for the retrieval Lambda."""
         CfnOutput(
             self,
-            "IngestionLambdaFunctionName",
+            "RetrievalLambdaFunctionName",
             value=self.lambda_function.function_name,
-            description="Name of the Ingestion Lambda function for document processing"
+            description="Name of the Retrieval Lambda function for vector search operations"
         )
         
         CfnOutput(
             self,
-            "IngestionLambdaFunctionArn",
+            "RetrievalLambdaFunctionArn",
             value=self.lambda_function.function_arn,
-            description="ARN of the Ingestion Lambda function"
+            description="ARN of the Retrieval Lambda function"
         )
 
     def get_lambda_function(self) -> _lambda.Function:

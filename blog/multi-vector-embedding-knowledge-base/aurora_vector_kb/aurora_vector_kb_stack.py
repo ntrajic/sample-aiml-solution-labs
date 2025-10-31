@@ -39,6 +39,7 @@ from .messaging.sqs_construct import SqsConstruct
 # Import processing constructs
 from .processing.sync_lambda_construct import SyncLambdaConstruct
 from .processing.ingestion_lambda_construct import IngestionLambdaConstruct
+from .processing.retrieval_lambda_construct import RetrievalLambdaConstruct
 
 
 class AuroraVectorKbStack(Stack):
@@ -179,8 +180,8 @@ class AuroraVectorKbStack(Stack):
             vpc=self.vpc,
             lambda_security_group=self.lambda_security_group,
             ingestion_queue=self.ingestion_queue,
-            cognito_config_secret=self.cognito_config_secret,
             database_credentials_secret=self.database_credentials,
+            aurora_cluster=self.cluster,
             postgresql_layer=self.dependencies_layer
         )
         
@@ -189,6 +190,23 @@ class AuroraVectorKbStack(Stack):
         self.ingestion_lambda_role = self.ingestion_lambda_construct.get_lambda_role()
         self.ingestion_lambda_arn = self.ingestion_lambda_construct.get_function_arn()
         self.ingestion_lambda_name = self.ingestion_lambda_construct.get_function_name()
+        
+        # Create Vector Retrieval Lambda function for search operations
+        self.retrieval_lambda_construct = RetrievalLambdaConstruct(
+            self,
+            "RetrievalLambda",
+            vpc=self.vpc,
+            lambda_security_group=self.lambda_security_group,
+            database_credentials_secret=self.database_credentials,
+            aurora_cluster=self.cluster,
+            postgresql_layer=self.dependencies_layer
+        )
+        
+        # Store retrieval Lambda references
+        self.retrieval_lambda_function = self.retrieval_lambda_construct.get_lambda_function()
+        self.retrieval_lambda_role = self.retrieval_lambda_construct.get_lambda_role()
+        self.retrieval_lambda_arn = self.retrieval_lambda_construct.get_function_arn()
+        self.retrieval_lambda_name = self.retrieval_lambda_construct.get_function_name()
         
         # Stack-level outputs
         CfnOutput(
@@ -254,6 +272,20 @@ class AuroraVectorKbStack(Stack):
             "IngestionLambdaFunctionArn",
             value=self.ingestion_lambda_arn,
             description="ARN of the Ingestion Lambda function"
+        )
+        
+        CfnOutput(
+            self,
+            "RetrievalLambdaFunctionName",
+            value=self.retrieval_lambda_name,
+            description="Name of the Retrieval Lambda function for vector search operations"
+        )
+        
+        CfnOutput(
+            self,
+            "RetrievalLambdaFunctionArn",
+            value=self.retrieval_lambda_arn,
+            description="ARN of the Retrieval Lambda function"
         )
         
         CfnOutput(

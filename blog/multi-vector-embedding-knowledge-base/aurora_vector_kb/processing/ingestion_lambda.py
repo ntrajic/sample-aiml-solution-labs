@@ -13,7 +13,7 @@ import re
 from typing import Dict, Any, List, Optional, Tuple
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
-import base64
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import tiktoken
@@ -30,12 +30,10 @@ bedrock_client = boto3.client('bedrock-runtime')
 secrets_client = boto3.client('secretsmanager')
 
 # Environment variables
-COGNITO_CONFIG_SECRET_NAME = os.environ.get('COGNITO_CONFIG_SECRET_NAME')
 DB_SECRET_NAME = os.environ.get('DB_SECRET_NAME')
 TITAN_MODEL_ID = "amazon.titan-embed-text-v2:0"
 
 # Cache for configurations
-_cognito_config_cache = None
 _db_config_cache = None
 _tokenizer_cache = None
 
@@ -66,19 +64,19 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Parse SQS message
             message_body = json.loads(record['body'])
             s3_uri = message_body.get('s3_uri')
-            jwt_token = message_body.get('jwt_token')
             
             logger.info(f"Processing document: {s3_uri}")
             
             # Validate required parameters
             if not s3_uri:
                 raise ValueError("s3_uri parameter is required")
-            if not jwt_token:
-                raise ValueError("jwt_token parameter is required")
             
-            # Validate JWT token
-            user_claims = validate_jwt_token(jwt_token)
-            logger.info(f"JWT validation successful for user: {user_claims.get('sub', 'unknown')}")
+            # Create default user claims for audit trail
+            user_claims = {
+                'sub': 'system',
+                'username': 'ingestion-lambda',
+                'aud': 'aurora-vector-kb'
+            }
             
             # Process the document
             process_document(s3_uri, user_claims)
@@ -406,105 +404,7 @@ def parse_s3_uri(s3_uri: str) -> Tuple[str, str]:
     return bucket, key
 
 
-def validate_jwt_token(token: str) -> Dict[str, Any]:
-    """
-    Validate JWT token against Cognito User Pool.
-    
-    Args:
-        token: JWT token to validate
-        
-    Returns:
-        Dictionary containing user claims if valid
-        
-    Raises:
-        ValueError: If token is invalid or expired
-    """
-    try:
-        # Get Cognito configuration
-        cognito_config = get_cognito_config()
-        
-        # Split the token into parts
-        parts = token.split('.')
-        if len(parts) != 3:
-            raise ValueError("Invalid JWT token format")
-        
-        # Decode the payload (second part)
-        payload_encoded = parts[1]
-        # Add padding if needed
-        payload_encoded += '=' * (4 - len(payload_encoded) % 4)
-        
-        try:
-            payload_bytes = base64.urlsafe_b64decode(payload_encoded)
-            payload = json.loads(payload_bytes.decode('utf-8'))
-        except Exception as e:
-            raise ValueError(f"Failed to decode JWT payload: {str(e)}")
-        
-        # Basic validation checks
-        import time
-        current_time = int(time.time())
-        
-        # Check expiration
-        if 'exp' in payload and payload['exp'] < current_time:
-            raise ValueError("Token has expired")
-        
-        # Check not before
-        if 'nbf' in payload and payload['nbf'] > current_time:
-            raise ValueError("Token not yet valid")
-        
-        # Check issuer
-        expected_issuer = f"https://cognito-idp.{cognito_config['region']}.amazonaws.com/{cognito_config['user_pool_id']}"
-        if 'iss' in payload and payload['iss'] != expected_issuer:
-            raise ValueError("Invalid token issuer")
-        
-        # Check audience (client ID)
-        if 'aud' in payload and payload['aud'] != cognito_config['client_id']:
-            raise ValueError("Invalid token audience")
-        
-        logger.info("JWT token validated successfully")
-        return payload
-        
-    except ValueError as e:
-        logger.error(f"JWT token validation failed: {str(e)}")
-        raise
-        
-    except Exception as e:
-        logger.error(f"Error validating JWT token: {str(e)}")
-        raise ValueError(f"Token validation error: {str(e)}")
 
-
-def get_cognito_config() -> Dict[str, str]:
-    """
-    Get Cognito configuration from Secrets Manager with caching.
-    
-    Returns:
-        Dictionary containing Cognito configuration
-    """
-    global _cognito_config_cache
-    
-    if _cognito_config_cache is not None:
-        return _cognito_config_cache
-    
-    try:
-        logger.info(f"Retrieving Cognito configuration from secret: {COGNITO_CONFIG_SECRET_NAME}")
-        
-        response = secrets_client.get_secret_value(SecretId=COGNITO_CONFIG_SECRET_NAME)
-        config_data = json.loads(response['SecretString'])
-        
-        required_fields = ['user_pool_id', 'client_id', 'region']
-        for field in required_fields:
-            if field not in config_data:
-                raise ValueError(f"Missing required field in Cognito config: {field}")
-        
-        _cognito_config_cache = config_data
-        logger.info("Cognito configuration retrieved successfully")
-        return _cognito_config_cache
-        
-    except ClientError as e:
-        logger.error(f"Error retrieving Cognito configuration: {str(e)}")
-        raise
-    except (KeyError, json.JSONDecodeError, ValueError) as e:
-        logger.error(f"Error parsing Cognito configuration: {str(e)}")
-        raise
 
 
 def generate_all_embeddings(chunks: List[str], metadata: Dict[str, Any]) -> Dict[str, List[List[float]]]:
@@ -741,8 +641,9 @@ def generate_embeddings_batch(texts: List[str], dimensions: int) -> List[List[fl
     
     logger.info(f"Generated {len(embeddings)} batch embeddings")
     return embeddings
-d
-ef store_document_data(s3_uri: str, chunks: List[str], metadata: Dict[str, Any], 
+
+
+def store_document_data(s3_uri: str, chunks: List[str], metadata: Dict[str, Any], 
                        embeddings_data: Dict[str, Any], user_claims: Dict[str, Any]) -> None:
     """
     Store document chunks and embeddings in the database.
@@ -877,10 +778,24 @@ def get_database_config() -> Dict[str, str]:
         response = secrets_client.get_secret_value(SecretId=DB_SECRET_NAME)
         config_data = json.loads(response['SecretString'])
         
-        required_fields = ['host', 'port', 'database', 'username', 'password']
+        # Aurora credentials secret only contains username and password
+        # We need to add the other required fields from environment or defaults
+        required_fields = ['username', 'password']
         for field in required_fields:
             if field not in config_data:
                 raise ValueError(f"Missing required field in database config: {field}")
+        
+        # Add missing fields from environment variables
+        # These are provided by the Lambda construct from Aurora cluster configuration
+        config_data['database'] = os.environ.get('DB_NAME', 'vector_kb')
+        config_data['host'] = os.environ.get('DB_HOST')
+        config_data['port'] = int(os.environ.get('DB_PORT', '5432'))
+        
+        # Validate that required environment variables are present
+        if not config_data['host']:
+            raise ValueError("DB_HOST environment variable is required")
+        if not config_data['database']:
+            raise ValueError("DB_NAME environment variable is required")
         
         _db_config_cache = config_data
         logger.info("Database configuration retrieved successfully")

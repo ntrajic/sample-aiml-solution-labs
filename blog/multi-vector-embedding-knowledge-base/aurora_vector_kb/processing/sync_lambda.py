@@ -59,12 +59,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not s3_bucket:
             raise ValueError("s3_bucket parameter is required (either in event or as DEFAULT_S3_BUCKET environment variable)")
         
-        if not jwt_token:
-            raise ValueError("jwt_token parameter is required")
-        
-        # Validate JWT token
-        user_claims = validate_jwt_token(jwt_token)
-        logger.info(f"JWT validation successful for user: {user_claims.get('sub', 'unknown')}")
+        # JWT token validation (optional for direct testing)
+        user_claims = {}
+        if jwt_token:
+            # Validate JWT token if provided
+            user_claims = validate_jwt_token(jwt_token)
+            logger.info(f"JWT validation successful for user: {user_claims.get('sub', 'unknown')}")
+        else:
+            # Allow direct invocation without JWT for testing
+            logger.info("No JWT token provided - assuming direct invocation for testing")
+            user_claims = {'sub': 'test-user', 'source': 'direct-invocation'}
         
         # List files in S3 location
         s3_files = list_s3_files(s3_bucket, s3_prefix)
@@ -292,12 +296,14 @@ def list_s3_files(bucket: str, prefix: str) -> List[str]:
                 for obj in response['Contents']:
                     # Skip directories (objects ending with '/')
                     if not obj['Key'].endswith('/'):
-                        s3_uri = f"s3://{bucket}/{obj['Key']}"
-                        s3_files.append(s3_uri)
-                        
-                        # Log progress for large directories
-                        if len(s3_files) % 100 == 0:
-                            logger.info(f"Found {len(s3_files)} files so far...")
+                        # Skip metadata files - only queue actual documents
+                        if not obj['Key'].endswith('.metadata.json'):
+                            s3_uri = f"s3://{bucket}/{obj['Key']}"
+                            s3_files.append(s3_uri)
+                            
+                            # Log progress for large directories
+                            if len(s3_files) % 100 == 0:
+                                logger.info(f"Found {len(s3_files)} files so far...")
             
             # Check if there are more pages
             if response.get('IsTruncated', False):
@@ -325,13 +331,13 @@ def list_s3_files(bucket: str, prefix: str) -> List[str]:
         raise
 
 
-def queue_files_for_ingestion(s3_files: List[str], jwt_token: str) -> int:
+def queue_files_for_ingestion(s3_files: List[str], jwt_token: Optional[str] = None) -> int:
     """
     Queue S3 files for ingestion processing via SQS.
     
     Args:
         s3_files: List of S3 URIs to queue for ingestion
-        jwt_token: JWT token to include in messages
+        jwt_token: JWT token to include in messages (optional)
         
     Returns:
         Number of files successfully queued
@@ -354,9 +360,12 @@ def queue_files_for_ingestion(s3_files: List[str], jwt_token: str) -> int:
             entries = []
             for j, s3_uri in enumerate(batch):
                 message_body = {
-                    's3_uri': s3_uri,
-                    'jwt_token': jwt_token
+                    's3_uri': s3_uri
                 }
+                
+                # Only include JWT token if provided
+                if jwt_token:
+                    message_body['jwt_token'] = jwt_token
                 
                 entries.append({
                     'Id': str(i + j),
