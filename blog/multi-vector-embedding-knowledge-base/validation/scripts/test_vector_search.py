@@ -138,9 +138,8 @@ def print_results(response: Dict[str, Any]):
                 # Print metadata
                 if result.get('metadata'):
                     metadata = result['metadata']
-                    print(f"     Provider: {metadata.get('provider', 'N/A')}")
                     print(f"     Category: {metadata.get('category', 'N/A')}")
-                    print(f"     Type: {metadata.get('type', 'N/A')}")
+                    print(f"     Industry: {metadata.get('industry', 'N/A')}")
             
             if len(results) > 5:
                 print(f"\n  ... and {len(results) - 5} more results")

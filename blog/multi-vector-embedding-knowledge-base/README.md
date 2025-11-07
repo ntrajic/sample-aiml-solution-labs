@@ -37,7 +37,7 @@ These documents provide insight into the systematic approach used to build this 
 This system provides:
 - **Vector Storage**: Aurora PostgreSQL with pgvector extension for multi-dimensional embeddings
 - **Document Processing**: Automated ingestion from S3 with chunking and metadata extraction
-- **Multi-Vector Search**: Support for document, metadata, provider, category, and type embeddings
+- **Multi-Vector Search**: Support for document, metadata, category, and industry embeddings
 - **Authentication**: JWT-based security through Amazon Cognito
 - **API Integration**: AgentCore Gateway MCP endpoints for seamless integration
 - **Scalable Processing**: SQS-based queuing with concurrency controls
@@ -206,7 +206,7 @@ Additional custom fields can be included and will be stored with the document.
 After deployment, the system provides:
 1. S3 directory synchronization through the Sync Lambda
 2. Automated document processing with metadata-driven categorization
-3. Multi-dimensional embedding generation (document, metadata, provider, category, type)
+3. Multi-dimensional embedding generation (document, metadata, category, industry)
 4. Vector similarity search with multiple embedding types
 5. Secure API access through JWT authentication
 6. Integration with Strands Agents through AgentCore Gateway

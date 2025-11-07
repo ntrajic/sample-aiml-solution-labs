@@ -144,12 +144,10 @@ def handle_create(event: Dict[str, Any]) -> Dict[str, Any]:
             'IndexesCreated': [
                 'idx_vector_store_embedding_document',
                 'idx_vector_store_embedding_metadata',
-                'idx_vector_store_embedding_provider',
                 'idx_vector_store_embedding_category',
-                'idx_vector_store_embedding_type',
-                'idx_vector_store_provider',
+                'idx_vector_store_embedding_industry',
                 'idx_vector_store_category',
-                'idx_vector_store_type',
+                'idx_vector_store_industry',
                 'idx_vector_store_source_s3_uri'
             ]
         }
@@ -316,12 +314,10 @@ def create_vector_store_table(cursor) -> None:
             embedding_document VECTOR(1024) NOT NULL,
             metadata JSONB NOT NULL,
             embedding_metadata VECTOR(512) NOT NULL,
-            provider TEXT NOT NULL,
-            embedding_provider VECTOR(256) NOT NULL,
             category TEXT NOT NULL,
             embedding_category VECTOR(256) NOT NULL,
-            type TEXT NOT NULL,
-            embedding_type VECTOR(256) NOT NULL,
+            industry TEXT NOT NULL,
+            embedding_industry VECTOR(256) NOT NULL,
             source_s3_uri TEXT NOT NULL,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -346,9 +342,8 @@ def create_vector_indexes(cursor) -> None:
     vector_indexes = [
         ("idx_vector_store_embedding_document", "embedding_document"),
         ("idx_vector_store_embedding_metadata", "embedding_metadata"),
-        ("idx_vector_store_embedding_provider", "embedding_provider"),
         ("idx_vector_store_embedding_category", "embedding_category"),
-        ("idx_vector_store_embedding_type", "embedding_type")
+        ("idx_vector_store_embedding_industry", "embedding_industry")
     ]
     
     for index_name, column_name in vector_indexes:
@@ -386,9 +381,8 @@ def create_filter_indexes(cursor) -> None:
     logger.info("Creating filter indexes")
     
     filter_indexes = [
-        ("idx_vector_store_provider", "provider"),
         ("idx_vector_store_category", "category"),
-        ("idx_vector_store_type", "type"),
+        ("idx_vector_store_industry", "industry"),
         ("idx_vector_store_source_s3_uri", "source_s3_uri")
     ]
     

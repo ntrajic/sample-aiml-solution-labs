@@ -43,7 +43,7 @@ SEARCH_TYPES = {
     'filter_and_search'
 }
 
-FILTER_TYPES = {'provider', 'category', 'type'}
+FILTER_TYPES = {'category', 'industry'}
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -403,24 +403,50 @@ def handle_filter_and_search(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     conn = get_database_connection()
     try:
         with conn.cursor() as cursor:
-            # Build the field column name
-            field_column = f"embedding_{params['filter_type']}"
+            # Validate and map filter_type to safe column names (prevent SQL injection)
+            column_mapping = {
+                'category': 'embedding_category', 
+                'industry': 'embedding_industry'
+            }
             
-            query_sql = f"""
-            WITH filtered_docs AS (
-              SELECT id, document, metadata, source_s3_uri, embedding_document,
-                     1 - ({field_column} <=> %s::vector) as filter_score
-              FROM vector_store
-              ORDER BY {field_column} <=> %s::vector
-              LIMIT %s
-            )
-            SELECT id, document, metadata, source_s3_uri,
-                   1 - (embedding_document <=> %s::vector) as content_score,
-                   filter_score
-            FROM filtered_docs
-            ORDER BY embedding_document <=> %s::vector
-            LIMIT %s;
-            """
+            if params['filter_type'] not in column_mapping:
+                raise ValueError(f"Invalid filter_type: {params['filter_type']}")
+            
+            field_column = column_mapping[params['filter_type']]
+            
+            # Use safe column name in query (no user input concatenation)
+            if field_column == 'embedding_category':
+                query_sql = """
+                WITH filtered_docs AS (
+                  SELECT id, document, metadata, source_s3_uri, embedding_document,
+                         1 - (embedding_category <=> %s::vector) as filter_score
+                  FROM vector_store
+                  ORDER BY embedding_category <=> %s::vector
+                  LIMIT %s
+                )
+                SELECT id, document, metadata, source_s3_uri,
+                       1 - (embedding_document <=> %s::vector) as content_score,
+                       filter_score
+                FROM filtered_docs
+                ORDER BY embedding_document <=> %s::vector
+                LIMIT %s;
+                """
+            else:  # embedding_industry
+                query_sql = """
+                WITH filtered_docs AS (
+                  SELECT id, document, metadata, source_s3_uri, embedding_document,
+                         1 - (embedding_industry <=> %s::vector) as filter_score
+                  FROM vector_store
+                  ORDER BY embedding_industry <=> %s::vector
+                  LIMIT %s
+                )
+                SELECT id, document, metadata, source_s3_uri,
+                       1 - (embedding_document <=> %s::vector) as content_score,
+                       filter_score
+                FROM filtered_docs
+                ORDER BY embedding_document <=> %s::vector
+                LIMIT %s;
+                """
             
             cursor.execute(query_sql, (
                 filter_vector, filter_vector, filter_limit,

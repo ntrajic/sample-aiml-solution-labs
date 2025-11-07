@@ -284,7 +284,7 @@ Examples:
     
     parser.add_argument(
         '--filter-type',
-        choices=['provider', 'category', 'type'],
+        choices=['category', 'industry'],
         help='Filter type for filter_and_search (default: category)'
     )
     

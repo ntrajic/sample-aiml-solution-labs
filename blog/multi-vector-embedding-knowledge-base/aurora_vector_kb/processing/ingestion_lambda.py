@@ -215,7 +215,7 @@ def read_metadata_file(bucket: str, key: str) -> Dict[str, Any]:
         metadata_json = json.loads(metadata_content)
         
         # Validate required fields
-        required_fields = ['provider', 'type', 'category']
+        required_fields = ['category', 'industry']
         for field in required_fields:
             if field not in metadata_json:
                 raise ValueError(f"Missing required field in metadata: {field}")
@@ -234,9 +234,8 @@ def read_metadata_file(bucket: str, key: str) -> Dict[str, Any]:
         
         # Create consolidated metadata with additional system fields
         metadata = {
-            "provider": metadata_json['provider'],
             "category": category,
-            "type": metadata_json['type'],
+            "industry": metadata_json['industry'],
             "source_file": filename,
             "file_extension": file_extension,
             "processed_at": datetime.utcnow().isoformat()
@@ -244,10 +243,10 @@ def read_metadata_file(bucket: str, key: str) -> Dict[str, Any]:
         
         # Add any additional fields from the metadata file
         for key_name, value in metadata_json.items():
-            if key_name not in ['provider', 'type', 'category']:
+            if key_name not in ['category', 'industry']:
                 metadata[key_name] = value
         
-        logger.info(f"Read metadata: provider={metadata['provider']}, category={metadata['category']}, type={metadata['type']}")
+        logger.info(f"Read metadata: category={metadata['category']}, industry={metadata['industry']}")
         return metadata
         
     except ClientError as e:
@@ -423,9 +422,8 @@ def generate_all_embeddings(chunks: List[str], metadata: Dict[str, Any]) -> Dict
     embeddings_data = {
         'document_embeddings': [],
         'metadata_embedding': None,
-        'provider_embedding': None,
         'category_embedding': None,
-        'type_embedding': None
+        'industry_embedding': None
     }
     
     # Generate embeddings for document chunks (1024 dimensions)
@@ -436,13 +434,11 @@ def generate_all_embeddings(chunks: List[str], metadata: Dict[str, Any]) -> Dict
     embeddings_data['metadata_embedding'] = generate_metadata_embedding(metadata_text)
     
     # Generate embeddings for individual metadata fields (256 dimensions each)
-    embeddings_data['provider_embedding'] = generate_field_embedding(metadata['provider'])
-    
     # Handle category as list - join with commas
     category_text = ', '.join(metadata['category']) if isinstance(metadata['category'], list) else str(metadata['category'])
     embeddings_data['category_embedding'] = generate_field_embedding(category_text)
     
-    embeddings_data['type_embedding'] = generate_field_embedding(metadata['type'])
+    embeddings_data['industry_embedding'] = generate_field_embedding(metadata['industry'])
     
     logger.info("All embeddings generated successfully")
     return embeddings_data
@@ -860,17 +856,15 @@ def insert_document_chunks(cursor, s3_uri: str, chunks: List[str], metadata: Dic
             embedding_document,
             metadata,
             embedding_metadata,
-            provider,
-            embedding_provider,
             category,
             embedding_category,
-            type,
-            embedding_type,
+            industry,
+            embedding_industry,
             source_s3_uri,
             created_at,
             updated_at
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         """
         
@@ -881,9 +875,8 @@ def insert_document_chunks(cursor, s3_uri: str, chunks: List[str], metadata: Dic
         # Get embeddings
         document_embeddings = embeddings_data['document_embeddings']
         metadata_embedding = embeddings_data['metadata_embedding']
-        provider_embedding = embeddings_data['provider_embedding']
         category_embedding = embeddings_data['category_embedding']
-        type_embedding = embeddings_data['type_embedding']
+        industry_embedding = embeddings_data['industry_embedding']
         
         # Prepare category as string
         category_str = ', '.join(metadata['category']) if isinstance(metadata['category'], list) else str(metadata['category'])
@@ -902,12 +895,10 @@ def insert_document_chunks(cursor, s3_uri: str, chunks: List[str], metadata: Dic
                 doc_embedding,                      # embedding_document
                 json.dumps(metadata),               # metadata (JSONB)
                 metadata_embedding,                 # embedding_metadata
-                metadata['provider'],               # provider
-                provider_embedding,                 # embedding_provider
                 category_str,                       # category
                 category_embedding,                 # embedding_category
-                metadata['type'],                   # type
-                type_embedding,                     # embedding_type
+                metadata['industry'],               # industry
+                industry_embedding,                 # embedding_industry
                 s3_uri,                            # source_s3_uri
                 current_time,                      # created_at
                 current_time                       # updated_at
