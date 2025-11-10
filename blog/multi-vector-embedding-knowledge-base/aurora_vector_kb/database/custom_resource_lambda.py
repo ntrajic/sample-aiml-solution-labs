@@ -166,12 +166,62 @@ def handle_update(event: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Response data dictionary
     """
-    logger.info("Processing update request - no action required for database initialization")
+    logger.info("Processing update request")
     
-    return {
-        'Message': 'Update completed - no database changes required',
-        'Action': 'None'
-    }
+    # Check if SchemaVersion changed - if so, recreate the table
+    old_props = event.get('OldResourceProperties', {})
+    new_props = event.get('ResourceProperties', {})
+    
+    old_version = old_props.get('SchemaVersion', '1')
+    new_version = new_props.get('SchemaVersion', '1')
+    
+    if old_version != new_version:
+        logger.info(f"Schema version changed from {old_version} to {new_version} - recreating table")
+        
+        # Get database connection parameters from event properties
+        properties = event.get('ResourceProperties', {})
+        
+        # Connect to database and reinitialize schema
+        connection = get_database_connection(properties)
+        
+        try:
+            with connection:
+                with connection.cursor() as cursor:
+                    # Drop existing table if it exists
+                    logger.info("Dropping existing vector_store table")
+                    cursor.execute("DROP TABLE IF EXISTS vector_store CASCADE;")
+                    
+                    # Enable pgvector extension
+                    enable_pgvector_extension(cursor)
+                    
+                    # Create vector_store table with new schema
+                    create_vector_store_table(cursor)
+                    
+                    # Create indexes for vector similarity search
+                    create_vector_indexes(cursor)
+                    
+                    # Create indexes for filtering
+                    create_filter_indexes(cursor)
+                    
+                    # Commit all changes
+                    connection.commit()
+                    
+            logger.info("Database schema recreated successfully")
+            
+            return {
+                'Message': f'Database schema updated from version {old_version} to {new_version}',
+                'TableRecreated': 'vector_store',
+                'SchemaVersion': new_version
+            }
+            
+        finally:
+            connection.close()
+    else:
+        logger.info("No schema version change detected - no action required")
+        return {
+            'Message': 'Update completed - no database changes required',
+            'Action': 'None'
+        }
 
 
 def handle_delete(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -305,7 +355,7 @@ def create_vector_store_table(cursor) -> None:
     """)
     
     table_exists = cursor.fetchone()[0]
-    
+
     if not table_exists:
         create_table_sql = """
         CREATE TABLE vector_store (

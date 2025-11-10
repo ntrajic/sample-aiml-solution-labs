@@ -42,6 +42,7 @@ class AuroraClusterConstruct(Construct):
         security_group: ec2.SecurityGroup,
         lambda_security_group: ec2.SecurityGroup,
         postgresql_layer,
+
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -52,6 +53,7 @@ class AuroraClusterConstruct(Construct):
         self.security_group = security_group
         self.lambda_security_group = lambda_security_group
         self.postgresql_layer = postgresql_layer
+
 
         # Create database credentials in Secrets Manager
         self._create_database_credentials()
@@ -223,6 +225,7 @@ class AuroraClusterConstruct(Construct):
             aurora_cluster=self.cluster,
             database_credentials_secret=self.database_credentials,
             postgresql_layer=self.postgresql_layer
+
         )
 
     def _create_outputs(self, scope: Construct) -> None:

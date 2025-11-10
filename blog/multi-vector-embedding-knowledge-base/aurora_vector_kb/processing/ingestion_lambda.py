@@ -150,23 +150,25 @@ def download_s3_document(bucket: str, key: str) -> str:
         content_bytes = response['Body'].read()
         
         # Handle different content types
-        if content_type.startswith('text/') or 'json' in content_type:
-            # Text-based content
-            try:
-                content = content_bytes.decode('utf-8')
-            except UnicodeDecodeError:
-                # Try other encodings
-                for encoding in ['latin-1', 'cp1252']:
-                    try:
-                        content = content_bytes.decode(encoding)
-                        break
-                    except UnicodeDecodeError:
-                        continue
-                else:
-                    raise ValueError(f"Unable to decode document content for {key}")
-        else:
-            # For now, only support text-based documents
-            raise ValueError(f"Unsupported content type: {content_type}")
+        # Try to decode as text regardless of content type
+        # This handles cases where S3 sets content-type to binary/octet-stream for text files
+        try:
+            content = content_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            # Try other common encodings
+            for encoding in ['latin-1', 'cp1252', 'iso-8859-1']:
+                try:
+                    content = content_bytes.decode(encoding)
+                    logger.info(f"Successfully decoded document using {encoding} encoding")
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                # If all text decodings fail, this is likely a binary file
+                raise ValueError(
+                    f"Unable to decode document as text. Content type: {content_type}. "
+                    f"Only text-based documents are supported. File: {key}"
+                )
         
         logger.info(f"Downloaded document: {len(content)} characters")
         return content

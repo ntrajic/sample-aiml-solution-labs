@@ -42,6 +42,7 @@ class IngestionLambdaConstruct(Construct):
         database_credentials_secret: secretsmanager.Secret,
         aurora_cluster: rds.DatabaseCluster,
         postgresql_layer,
+
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -52,6 +53,7 @@ class IngestionLambdaConstruct(Construct):
         self.database_credentials_secret = database_credentials_secret
         self.aurora_cluster = aurora_cluster
         self.postgresql_layer = postgresql_layer
+
 
         # Create IAM role for the ingestion Lambda function
         self._create_lambda_role()

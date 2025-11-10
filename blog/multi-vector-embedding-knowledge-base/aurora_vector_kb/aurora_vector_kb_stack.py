@@ -23,8 +23,7 @@ from .networking.security_groups import SecurityGroupsConstruct
 # Import database constructs
 from .database.aurora_cluster import AuroraClusterConstruct
 
-# Import layer constructs
-from .layers.psycopg2_layer import DependenciesLayerConstruct
+
 
 # Import storage constructs
 from .storage.s3_construct import S3KnowledgeBaseConstruct
@@ -35,6 +34,9 @@ from .authentication.secrets_manager import SecretsManagerConstruct
 
 # Import messaging constructs
 from .messaging.sqs_construct import SqsConstruct
+
+# Import layer constructs
+from .layers.psycopg2_layer import DependenciesLayerConstruct
 
 # Import processing constructs
 from .processing.sync_lambda_construct import SyncLambdaConstruct
@@ -90,6 +92,8 @@ class AuroraVectorKbStack(Stack):
             "DependenciesLayer"
         )
         self.dependencies_layer = self.dependencies_layer_construct.get_layer()
+        
+
         
         # Create S3 bucket for knowledge base documents
         self.s3_construct = S3KnowledgeBaseConstruct(

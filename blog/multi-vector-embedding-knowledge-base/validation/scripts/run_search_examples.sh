@@ -6,27 +6,33 @@ This script demonstrates how to use test_vector_search.py with different search 
 """
 
 echo "🚀 Vector Search Examples"
+echo "Query: Find SageMaker use cases from various industry."
 echo "========================="
+read -p "Press Enter to continue..."
 
 echo ""
 echo "1️⃣  Content Similarity Search (default k=3)"
-echo "Searching for documents with similar content to 'machine learning algorithms'"
-python validation/scripts/test_vector_search.py --query "machine learning algorithms" --mode content_similarity --metadata "{}"
+python validation/scripts/test_vector_search.py --query "SageMaker use cases." --mode content_similarity --metadata "{}" --k 3
+echo "------------------------------------------------"
+read -p "Press Enter to continue..."
 
 echo ""
 echo "2️⃣  Metadata Similarity Search (k=3)"
-echo "Searching for documents with metadata similar to 'machine learning algorithms'"
-python validation/scripts/test_vector_search.py --query "machine learning algorithms" --mode metadata_similarity --metadata '{"query": "technical documentation"}' --k 3
+python validation/scripts/test_vector_search.py --query "SageMaker use cases." --mode metadata_similarity --metadata '{"query":"AI/ML, entertainment"}' --k 3
+echo "------------------------------------------------"
+read -p "Press Enter to continue..."
 
 echo ""
-echo "3️⃣  Hybrid Similarity Search (k=4)"
-echo "Combining content and metadata search with custom weights"
-python validation/scripts/test_vector_search.py --query "machine learning algorithms" --mode hybrid_similarity --metadata '{"metadata_query": "Blogs from hyperscalers", "content_weight": 0.2, "metadata_weight": 0.8}' --k 3
+echo "3️⃣  Hybrid Similarity Search (k=3)"
+python validation/scripts/test_vector_search.py --query "SageMaker use cases.s" --mode hybrid_similarity --metadata '{"query":"Analytics", "content_weight": 0.5, "metadata_weight": 0.5}' --k 3
+echo "------------------------------------------------"
+read -p "Press Enter to continue..."
 
 echo ""
 echo "4️⃣  Filter and Search (k=3)"
-echo "Filtering by category then searching within results"
-python validation/scripts/test_vector_search.py --query "machine learning algorithms" --mode filter_and_search --metadata '{"filter_type": "category", "filter_value": "machine learning"}' --k 3
+python validation/scripts/test_vector_search.py --query "SageMaker use cases." --mode filter_and_search --metadata '{"filter_type": "industry", "filter_value": "Manufacturing"}' --k 3
+echo "------------------------------------------------"
+read -p "Press Enter to continue..."
 
 echo ""
 echo "✅ All examples completed!"

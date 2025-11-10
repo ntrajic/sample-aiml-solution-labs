@@ -10,7 +10,7 @@ Simple test script for the vector retrieval Lambda function with explicit argume
 Usage:
     python validation/scripts/test_vector_search.py --query "machine learning" --mode content_similarity --metadata "{}"
     python validation/scripts/test_vector_search.py --query "AI research" --mode metadata_similarity --metadata '{"query": "technical documentation"}'
-    python validation/scripts/test_vector_search.py --query "neural networks" --mode hybrid_similarity --metadata '{"metadata_query": "research paper", "content_weight": 0.7, "metadata_weight": 0.3}'
+    python validation/scripts/test_vector_search.py --query "neural networks" --mode hybrid_similarity --metadata '{"query": "research paper", "content_weight": 0.7, "metadata_weight": 0.3}'
     python validation/scripts/test_vector_search.py --query "deep learning" --mode filter_and_search --metadata '{"filter_type": "category", "filter_value": "machine learning"}'
 """
 
@@ -63,21 +63,21 @@ def create_payload(query: str, mode: str, metadata: Dict[str, Any], k: int = 3) 
         payload["query"] = query
         
     elif mode == "metadata_similarity":
-        payload["metadata_query"] = metadata.get("query", query)
+        payload["metadata_query"] = str(metadata.get("query")),
         
     elif mode == "hybrid_similarity":
         payload.update({
             "query": query,
-            "metadata_query": metadata.get("metadata_query", query),
-            "content_weight": metadata.get("content_weight", 0.7),
-            "metadata_weight": metadata.get("metadata_weight", 0.3)
+            "metadata_query": str(metadata.get("query")),
+            "content_weight": metadata.get("content_weight", 0.5),
+            "metadata_weight": metadata.get("metadata_weight", 0.5)
         })
         
     elif mode == "filter_and_search":
         payload.update({
             "query": query,
-            "filter_type": metadata.get("filter_type", "category"),
-            "filter_value": metadata.get("filter_value", "technical")
+            "filter_type": metadata["filter_type"],
+            "filter_value": metadata["filter_value"]
         })
     else:
         raise ValueError(f"Invalid query mode: {mode}. Must be one of: content_similarity, metadata_similarity, hybrid_similarity, filter_and_search")
@@ -169,7 +169,7 @@ Examples:
   python test_vector_search.py --query "AI research" --mode metadata_similarity --metadata '{"query": "technical documentation"}'
   
   # Hybrid similarity search
-  python test_vector_search.py --query "neural networks" --mode hybrid_similarity --metadata '{"metadata_query": "research paper", "content_weight": 0.7, "metadata_weight": 0.3}'
+  python test_vector_search.py --query "neural networks" --mode hybrid_similarity --metadata '{"query": "research paper", "content_weight": 0.7, "metadata_weight": 0.3}'
   
   # Filter and search with custom k
   python test_vector_search.py --query "deep learning" --mode filter_and_search --metadata '{"filter_type": "category", "filter_value": "machine learning"}' --k 10
@@ -178,7 +178,7 @@ Examples:
     
     parser.add_argument(
         '--query',
-        required=True,
+        required=False,
         help='The text to search for'
     )
     
@@ -191,7 +191,7 @@ Examples:
     
     parser.add_argument(
         '--metadata',
-        required=True,
+        required=False,
         help='Metadata JSON string with additional parameters'
     )
     

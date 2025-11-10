@@ -1,10 +1,12 @@
 from mcp import StdioServerParameters, stdio_client
 from strands import Agent
+from strands.models import BedrockModel
 from strands_tools import http_request, use_aws, file_write
 import os
 import boto3
 from botocore.exceptions import ClientError
 
+os.environ["BYPASS_TOOL_CONSENT"] = "true"
 
 def get_s3_bucket_from_stack(stack_name: str = "AuroraVectorKbStack", region: str = "us-west-2") -> str:
     """
@@ -69,11 +71,22 @@ Sample industries: Gaming, Music, Sports, Healthcare, Finance, Retail, Manufactu
 
 Always create both the .txt file and .txt.metadata.json file for each document processed.
 """
-
-agent = Agent(tools=[http_request, use_aws, file_write], system_prompt=SYSTEM_PROMPT)
+model = BedrockModel(model_id="global.anthropic.claude-haiku-4-5-20251001-v1:0")
+agent = Agent(tools=[http_request, use_aws, file_write], model = model , system_prompt=SYSTEM_PROMPT)
 
 urls = [
-    "https://aws.amazon.com/blogs/gametech/designing-compliant-and-secure-betting-and-gaming-applications-on-aws/"
+    "https://aws.amazon.com/blogs/machine-learning/how-amazon-music-uses-sagemaker-with-nvidia-to-optimize-ml-training-and-inference-performance-and-cost/",
+    "https://aws.amazon.com/blogs/machine-learning/enhance-sports-narratives-with-natural-language-generation-using-amazon-sagemaker/",
+    "https://aws.amazon.com/blogs/gametech/revolutionizing-games-with-small-language-model-ai-companions/",
+    "https://aws.amazon.com/blogs/machine-learning/build-a-scalable-ai-video-generator-using-amazon-sagemaker-ai-and-cogvideox/",
+    "https://aws.amazon.com/blogs/industries/generative-ai-in-manufacturing/",
+    "https://aws.amazon.com/blogs/machine-learning/impel-enhances-automotive-dealership-customer-experience-with-fine-tuned-llms-on-amazon-sagemaker/",
+    "https://aws.amazon.com/blogs/machine-learning/solve-forecasting-challenges-for-the-retail-and-cpg-industry-using-amazon-sagemaker-canvas/",
+    "https://aws.amazon.com/blogs/machine-learning/fraud-detection-empowered-by-federated-learning-with-the-flower-framework-on-amazon-sagemaker-ai/",
+    "https://aws.amazon.com/blogs/supply-chain/aws-offerings-for-visibility-and-on-time-arrival-of-maintenance-spares-for-mining-and-energy/",
+    "https://aws.amazon.com/blogs/machine-learning/how-ifood-built-a-platform-to-run-hundreds-of-machine-learning-models-with-amazon-sagemaker-inference/"
+]
+
 
 # The agent() call returns an AgentResult object directly
 agent_result = agent(str(urls))

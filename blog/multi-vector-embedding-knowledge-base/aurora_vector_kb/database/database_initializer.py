@@ -40,6 +40,7 @@ class DatabaseInitializerConstruct(Construct):
         aurora_cluster: rds.DatabaseCluster,
         database_credentials_secret: secretsmanager.Secret,
         postgresql_layer,
+
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -50,6 +51,7 @@ class DatabaseInitializerConstruct(Construct):
         self.aurora_cluster = aurora_cluster
         self.database_credentials_secret = database_credentials_secret
         self.postgresql_layer = postgresql_layer
+
 
         # Create the Lambda function for database initialization
         self._create_initializer_lambda()
@@ -144,7 +146,9 @@ class DatabaseInitializerConstruct(Construct):
             "DatabaseName": "vector_kb",
             "CredentialsSecretArn": self.database_credentials_secret.secret_arn,
             # Add a timestamp to force updates when needed
-            "Timestamp": str(int(time.time()))
+            "Timestamp": str(int(time.time())),
+            # Increment this version to force schema recreation
+            "SchemaVersion": "3"
         }
 
         # Create the custom resource

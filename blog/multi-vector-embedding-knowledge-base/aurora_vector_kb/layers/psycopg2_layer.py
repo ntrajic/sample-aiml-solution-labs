@@ -7,8 +7,6 @@ to Aurora PostgreSQL.
 """
 
 import os
-import subprocess
-import tempfile
 from constructs import Construct
 from aws_cdk import (
     aws_lambda as _lambda,
@@ -40,13 +38,13 @@ class DependenciesLayerConstruct(Construct):
         self._create_layer()
 
     def _create_layer(self) -> None:
-        """Create the Lambda layer with all required dependencies."""
+        """Create a placeholder Lambda layer."""
         
         # Create layer from the layers directory
         layer_dir = os.path.join(os.path.dirname(__file__), "postgresql")
         
-        # Create the python directory and install dependencies locally
-        self._prepare_layer_assets(layer_dir)
+        # Ensure the python directory exists with a placeholder
+        self._ensure_layer_structure(layer_dir)
         
         self.layer = _lambda.LayerVersion(
             self,
@@ -57,42 +55,25 @@ class DependenciesLayerConstruct(Construct):
                 _lambda.Runtime.PYTHON_3_11,
                 _lambda.Runtime.PYTHON_3_12
             ],
-            description="Dependencies layer with psycopg2-binary, tiktoken, boto3 for Aurora Vector KB"
+            description="Placeholder layer for Aurora Vector KB (dependencies need to be installed manually)"
         )
 
         Tags.of(self.layer).add("Name", "aurora-vector-kb-dependencies-layer")
         Tags.of(self.layer).add("Component", "Layer")
         Tags.of(self.layer).add("Purpose", "Dependencies")
 
-    def _prepare_layer_assets(self, layer_dir: str) -> None:
-        """Prepare layer assets by installing dependencies locally."""
+
+
+    def _ensure_layer_structure(self, layer_dir: str) -> None:
+        """Ensure the layer has the minimum required structure."""
         python_dir = os.path.join(layer_dir, "python")
-        
-        # Create python directory if it doesn't exist
         os.makedirs(python_dir, exist_ok=True)
         
-        # Check if dependencies are already installed
-        psycopg2_path = os.path.join(python_dir, "psycopg2")
-        if not os.path.exists(psycopg2_path):
-            print("Installing PostgreSQL dependencies for Lambda layer...")
-            
-            # Install dependencies using pip
-            requirements_file = os.path.join(layer_dir, "requirements.txt")
-            if os.path.exists(requirements_file):
-                try:
-                    subprocess.run([
-                        "pip3", "install", 
-                        "--quiet",
-                        "--platform", "manylinux2014_x86_64",
-                        "--target", python_dir,
-                        "--python-version", "3.11",
-                        "--only-binary=:all:",
-                        "-r", requirements_file
-                    ], check=True, capture_output=True, text=True)
-                    print("PostgreSQL dependencies installed successfully")
-                except subprocess.CalledProcessError as e:
-                    print(f"Warning: Failed to install dependencies: {e}")
-                    print("Layer will be created without pre-installed dependencies")
+        # Create a placeholder file to ensure the directory is not empty
+        placeholder_file = os.path.join(python_dir, "__init__.py")
+        if not os.path.exists(placeholder_file):
+            with open(placeholder_file, 'w') as f:
+                f.write("# Placeholder file for Lambda layer\n")
 
     def get_layer(self) -> _lambda.LayerVersion:
         """Return the Lambda layer instance."""
