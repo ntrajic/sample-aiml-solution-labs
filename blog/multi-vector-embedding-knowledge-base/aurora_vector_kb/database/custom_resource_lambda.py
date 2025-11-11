@@ -11,6 +11,7 @@ import logging
 import os
 import urllib3
 import psycopg2
+from psycopg2 import sql
 from typing import Dict, Any, Optional
 import boto3
 from botocore.exceptions import ClientError
@@ -382,7 +383,7 @@ def create_vector_store_table(cursor) -> None:
 
 def create_vector_indexes(cursor) -> None:
     """
-    Create HNSW indexes for vector similarity search.
+    Create HNSW indexes for vector similarity search using safe identifier quoting.
     
     Args:
         cursor: Database cursor
@@ -397,7 +398,7 @@ def create_vector_indexes(cursor) -> None:
     ]
     
     for index_name, column_name in vector_indexes:
-        # Check if index already exists
+        # Check if index already exists using parameterized query
         cursor.execute("""
             SELECT EXISTS (
                 SELECT 1 FROM pg_indexes 
@@ -410,12 +411,16 @@ def create_vector_indexes(cursor) -> None:
         index_exists = cursor.fetchone()[0]
         
         if not index_exists:
-            create_index_sql = f"""
-            CREATE INDEX {index_name} ON vector_store 
-            USING hnsw ({column_name} vector_cosine_ops);
-            """
+            # Use psycopg2's SQL identifier quoting for safe DDL execution
+            create_index_query = sql.SQL(
+                "CREATE INDEX {index_name} ON {table_name} USING hnsw ({column_name} vector_cosine_ops)"
+            ).format(
+                index_name=sql.Identifier(index_name),
+                table_name=sql.Identifier('vector_store'),
+                column_name=sql.Identifier(column_name)
+            )
             
-            cursor.execute(create_index_sql)
+            cursor.execute(create_index_query)
             logger.info(f"Created vector index: {index_name}")
         else:
             logger.info(f"Vector index already exists: {index_name}")
@@ -423,7 +428,7 @@ def create_vector_indexes(cursor) -> None:
 
 def create_filter_indexes(cursor) -> None:
     """
-    Create B-tree indexes for filtering operations.
+    Create B-tree indexes for filtering operations using safe identifier quoting.
     
     Args:
         cursor: Database cursor
@@ -437,7 +442,7 @@ def create_filter_indexes(cursor) -> None:
     ]
     
     for index_name, column_name in filter_indexes:
-        # Check if index already exists
+        # Check if index already exists using parameterized query
         cursor.execute("""
             SELECT EXISTS (
                 SELECT 1 FROM pg_indexes 
@@ -450,11 +455,16 @@ def create_filter_indexes(cursor) -> None:
         index_exists = cursor.fetchone()[0]
         
         if not index_exists:
-            create_index_sql = f"""
-            CREATE INDEX {index_name} ON vector_store ({column_name});
-            """
+            # Use psycopg2's SQL identifier quoting for safe DDL execution
+            create_index_query = sql.SQL(
+                "CREATE INDEX {index_name} ON {table_name} ({column_name})"
+            ).format(
+                index_name=sql.Identifier(index_name),
+                table_name=sql.Identifier('vector_store'),
+                column_name=sql.Identifier(column_name)
+            )
             
-            cursor.execute(create_index_sql)
+            cursor.execute(create_index_query)
             logger.info(f"Created filter index: {index_name}")
         else:
             logger.info(f"Filter index already exists: {index_name}")
