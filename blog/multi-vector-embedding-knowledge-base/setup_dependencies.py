@@ -57,7 +57,7 @@ def install_dependencies():
         print(f"Running: {safe_cmd_display}")
         
         # Execute with shell=False (default) for security
-        result = subprocess.run(
+        result = subprocess.run( # pylint: disable=dangerous-subprocess-use-audit
             cmd, 
             check=True, 
             capture_output=True, 
@@ -107,7 +107,7 @@ def main():
     
     # Check if pip is available
     try:
-        subprocess.run(
+        subprocess.run( # pylint: disable=dangerous-subprocess-use-audit
             [sys.executable, "-m", "pip", "--version"],
             check=True,
             capture_output=True,

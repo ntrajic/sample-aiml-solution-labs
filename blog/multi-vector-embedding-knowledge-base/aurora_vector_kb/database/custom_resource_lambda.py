@@ -420,8 +420,8 @@ def create_vector_indexes(cursor) -> None:
                 column_name=sql.Identifier(column_name)
             )
             
-            cursor.execute(create_index_query)
-            logger.info(f"Created vector index: {index_name}")
+            cursor.execute(create_index_query) # pylint: disable=sqlalchemy-execute-raw-query
+            logger.info(f"Created vector index: {index_name}") 
         else:
             logger.info(f"Vector index already exists: {index_name}")
 
@@ -464,7 +464,7 @@ def create_filter_indexes(cursor) -> None:
                 column_name=sql.Identifier(column_name)
             )
             
-            cursor.execute(create_index_query)
+            cursor.execute(create_index_query) # pylint: disable=sqlalchemy-execute-raw-query
             logger.info(f"Created filter index: {index_name}")
         else:
             logger.info(f"Filter index already exists: {index_name}")
