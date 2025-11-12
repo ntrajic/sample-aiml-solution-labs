@@ -1,0 +1,1 @@
+# Aurora Vector Knowledge Base CDK Package
