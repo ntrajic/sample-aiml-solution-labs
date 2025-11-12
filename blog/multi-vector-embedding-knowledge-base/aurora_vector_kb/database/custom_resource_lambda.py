@@ -293,7 +293,6 @@ def get_database_credentials(secret_arn: str) -> Dict[str, str]:
         Dictionary containing username and password
     """
     try:
-        logger.info(f"Retrieving credentials from secret: {secret_arn}")
         
         response = secrets_client.get_secret_value(SecretId=secret_arn)
         secret_data = json.loads(response['SecretString'])

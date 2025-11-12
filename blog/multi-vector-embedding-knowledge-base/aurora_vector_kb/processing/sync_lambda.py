@@ -207,7 +207,6 @@ def get_cognito_config() -> Dict[str, str]:
         return _cognito_config_cache
     
     try:
-        logger.info(f"Retrieving Cognito configuration from secret: {COGNITO_CONFIG_SECRET_NAME}")
         
         response = secrets_client.get_secret_value(SecretId=COGNITO_CONFIG_SECRET_NAME)
         config_data = json.loads(response['SecretString'])
