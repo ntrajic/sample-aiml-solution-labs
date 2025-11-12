@@ -61,72 +61,6 @@ This system provides:
    ```bash
    pip install -r requirements.txt
    ```
-4. Prepare Lambda layer dependencies:
-   
-   **Linux/macOS:**
-   ```bash
-   ./scripts/prepare-lambda-layer.sh
-   ```
-   
-   **Windows:**
-   ```cmd
-   scripts\prepare-lambda-layer.bat
-   ```
-   
-   This script installs the required Python packages (psycopg2-binary, tiktoken, boto3) for the Lambda layer that enables PostgreSQL connectivity. The dependencies are installed locally and excluded from version control.
-
-## Deployment
-
-### Prerequisites Check
-
-Before deploying, ensure you have:
-- AWS CLI configured with appropriate permissions
-- Python 3.11+ installed
-- Lambda layer dependencies prepared (see Installation step 4)
-
-### Deploy Steps
-
-1. Bootstrap CDK (first time only):
-   ```bash
-   cdk bootstrap
-   ```
-
-2. Prepare Lambda layer (if not done during installation):
-   
-   **Linux/macOS:**
-   ```bash
-   ./scripts/prepare-lambda-layer.sh
-   ```
-   
-   **Windows:**
-   ```cmd
-   scripts\prepare-lambda-layer.bat
-   ```
-
-3. Deploy the stack:
-   ```bash
-   cdk deploy
-   ```
-
-4. To destroy the stack:
-   ```bash
-   cdk destroy
-   ```
-
-   **Note**: All resources are configured with `RemovalPolicy.DESTROY` for development environments, ensuring complete cleanup when the stack is destroyed. For production deployments, consider changing removal policies for critical resources like Cognito User Pools and Secrets Manager secrets to `RemovalPolicy.RETAIN`.
-
-### Troubleshooting Deployment
-
-**Lambda Layer Issues:**
-- If you get layer-related errors, run the layer preparation script to reinstall dependencies:
-  - Linux/macOS: `./scripts/prepare-lambda-layer.sh`
-  - Windows: `scripts\prepare-lambda-layer.bat`
-- Ensure you have pip3 installed and internet connectivity for package downloads
-- The layer dependencies are not included in version control and must be prepared locally
-
-**Permission Issues:**
-- Verify your AWS credentials have sufficient permissions for creating VPC, RDS, Lambda, and other resources
-- Check that your AWS account has service limits available for the resources being created
 
 ## Configuration
 
@@ -167,6 +101,55 @@ The system uses a `cdk.context.json` file to store deployment configuration and 
 The system also supports these optional context parameters:
 - `environment`: Environment name (dev/staging/prod)
 - Custom parameters can be passed via `cdk deploy -c key=value`
+
+## Deployment
+
+### Prerequisites Check
+
+Before deploying, ensure you have:
+- AWS CLI configured with appropriate permissions
+- Python 3.11+ installed
+- Configuration updated in `cdk.context.json` (see Configuration section above)
+
+### Prepare Lambda Layer Dependencies
+
+The Lambda functions require PostgreSQL and other dependencies. Run this script to install them:
+
+```bash
+python setup_dependencies.py
+```
+
+This installs the required packages (psycopg2-binary, tiktoken, boto3) into the Lambda layer directory. The dependencies are excluded from version control and must be prepared locally before deployment.
+
+### Deploy Steps
+
+1. Bootstrap CDK (first time only):
+   ```bash
+   cdk bootstrap
+   ```
+
+2. Deploy the stack:
+   ```bash
+   cdk deploy
+   ```
+
+3. To destroy the stack:
+   ```bash
+   cdk destroy
+   ```
+
+   **Note**: All resources are configured with `RemovalPolicy.DESTROY` for development environments, ensuring complete cleanup when the stack is destroyed. For production deployments, consider changing removal policies for critical resources like Cognito User Pools and Secrets Manager secrets to `RemovalPolicy.RETAIN`.
+
+### Troubleshooting Deployment
+
+**Lambda Layer Issues:**
+- If you get layer-related errors, run: `python setup_dependencies.py`
+- Ensure you have pip installed and internet connectivity for package downloads
+- The layer dependencies are not included in version control and must be prepared locally
+
+**Permission Issues:**
+- Verify your AWS credentials have sufficient permissions for creating VPC, RDS, Lambda, and other resources
+- Check that your AWS account has service limits available for the resources being created
 
 ## Components
 
