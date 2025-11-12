@@ -771,8 +771,6 @@ def get_database_config() -> Dict[str, str]:
         return _db_config_cache
     
     try:
-        logger.info(f"Retrieving database configuration from secret: {DB_SECRET_NAME}")
-        
         response = secrets_client.get_secret_value(SecretId=DB_SECRET_NAME)
         config_data = json.loads(response['SecretString'])
         
