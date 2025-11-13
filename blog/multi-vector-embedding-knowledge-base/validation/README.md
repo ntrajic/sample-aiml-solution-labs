@@ -23,31 +23,26 @@ Before testing, ensure you have:
 
 ## Installation
 
-### 1. Install Required Dependencies
+### Install Required Dependencies
 
-The validation scripts use dependencies from the main project. Ensure you've installed the main project dependencies:
-
-```bash
-# From the project root directory
-pip install -r requirements.txt
-```
-
-This installs all necessary packages including:
-- `boto3` - AWS SDK for Python
-- `aws-cdk-lib` - AWS CDK library
-- `constructs` - CDK constructs
-
-### 2. Install Strands Agents (for Web Scraping)
-
-The sample document scraper uses Strands Agents to collect content from AWS blogs. Install it:
+The validation scripts only require two packages:
 
 ```bash
+# Install boto3 for AWS SDK
+pip install boto3
+
+# Install Strands Agents for web scraping
 pip install strands-agents strands-tools
 ```
 
+**Dependencies:**
+- `boto3` - AWS SDK for Python (required for all scripts)
+- `strands-agents` - Strands AI agent framework (required for web scraper)
+- `strands-tools` - Strands tools library (required for web scraper)
+
 **Note**: Strands Agents requires Python 3.11 or later.
 
-### 3. Navigate to Validation Directory
+### Navigate to Validation Directory
 
 All validation scripts should be run from the `validation` directory:
 
@@ -55,7 +50,7 @@ All validation scripts should be run from the `validation` directory:
 cd validation
 ```
 
-### 4. Verify AWS Configuration
+### Verify AWS Configuration
 
 Ensure your AWS credentials are configured:
 
@@ -70,22 +65,19 @@ This should return your AWS account information.
 Here's the fastest way to test the system:
 
 ```bash
-# 1. Install main project dependencies (from project root)
-pip install -r requirements.txt
+# 1. Install dependencies
+pip install boto3 strands-agents strands-tools
 
-# 2. Install Strands Agents
-pip install strands-agents strands-tools
-
-# 3. Navigate to validation directory
+# 2. Navigate to validation directory
 cd validation
 
-# 4. Collect sample documents from AWS blogs
+# 3. Collect sample documents from AWS blogs
 python scripts/sample_documents_scraper.py
 
-# 5. Trigger document ingestion (sync S3 to vector store)
+# 4. Trigger document ingestion (sync S3 to vector store)
 python scripts/test_sync_lambda.py
 
-# 6. Wait a few moments for ingestion to complete, then run search examples
+# 5. Wait a few moments for ingestion to complete, then run search examples
 bash scripts/run_search_examples.sh
 ```
 
