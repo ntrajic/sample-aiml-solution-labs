@@ -15,28 +15,28 @@ This agent helps AWS sales teams and customers with:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Client Application                        │
-│              (Claude Desktop, Custom App, etc.)              │
+│                    Client Application                       │
+│ (Amazon Quick Suite, Claude Desktop, Custom App, etc.)      │
 └────────────────────────┬────────────────────────────────────┘
                          │ HTTPS + OAuth2
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│              Amazon Cognito User Pool                        │
-│                  (Authentication)                            │
+│              Amazon Cognito User Pool                       │
+│                  (Authentication)                           │
 └────────────────────────┬────────────────────────────────────┘
                          │ Bearer Token
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│         Amazon Bedrock AgentCore Runtime                     │
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │         Cost Analysis Agent (MCP Server)           │    │
-│  │                                                      │    │
-│  │  • Strands Agent with Claude Haiku 4.5             │    │
-│  │  • 12 Tools for pricing and calculations           │    │
-│  │  • FastMCP for MCP protocol                        │    │
-│  └────────────────────────────────────────────────────┘    │
-│                                                              │
+│         Amazon Bedrock AgentCore Runtime                    │
+│                                                             │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │         Cost Analysis Agent (MCP Server)           │     │
+│  │                                                    │     │
+│  │  • Strands Agent with Claude Haiku 4.5             │     │
+│  │  • 12 Tools for pricing and calculations           │     │
+│  │  • FastMCP for MCP protocol                        │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                             │
 └────────────────────────┬────────────────────────────────────┘
                          │
         ┌────────────────┼────────────────┐
