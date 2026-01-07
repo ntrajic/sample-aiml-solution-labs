@@ -32,13 +32,13 @@ The validation scripts only require two packages:
 pip install boto3
 
 # Install Strands Agents for web scraping
-pip install strands-agents strands-tools
+pip install strands-agents strands-agents-tools
 ```
 
 **Dependencies:**
 - `boto3` - AWS SDK for Python (required for all scripts)
 - `strands-agents` - Strands AI agent framework (required for web scraper)
-- `strands-tools` - Strands tools library (required for web scraper)
+- `strands-agents-tools` - Strands tools library (required for web scraper)
 
 **Note**: Strands Agents requires Python 3.11 or later.
 
@@ -66,7 +66,7 @@ Here's the fastest way to test the system:
 
 ```bash
 # 1. Install dependencies
-pip install boto3 strands-agents strands-tools
+pip install boto3 strands-agents strands-agents-tools
 
 # 2. Navigate to validation directory
 cd validation
@@ -386,7 +386,7 @@ aws lambda list-functions --query 'Functions[?contains(FunctionName, `AuroraVect
 
 **Solution**: Ensure Strands Agents is installed:
 ```bash
-pip install --upgrade strands-agents strands-tools
+pip install --upgrade strands-agents strands-agents-tools
 ```
 
 Strands Agents requires Python 3.11+. Check your Python version:
