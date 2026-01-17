@@ -13,10 +13,11 @@ import argparse
 import json
 import os
 
+app = BedrockAgentCoreApp()
+
 # Set up environment for tools
 os.environ["BYPASS_TOOL_CONSENT"] = "true"
 os.environ["PYTHON_REPL_INTERACTIVE"] = "false"
-print("OTEL_EXPORTER_OTLP_ENDPOINT=", os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"))
 
 # Create FastMCP application
 mcp = FastMCP(host="0.0.0.0", stateless_http=True)
