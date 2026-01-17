@@ -7,6 +7,7 @@ import boto3
 import time
 from botocore.exceptions import ClientError
 
+TIME_DELAY = 5
 
 class PolicyClient:
     """Client for managing AgentCore Policy Engines and Policies"""
@@ -63,7 +64,7 @@ class PolicyClient:
                 raise Exception(f"Policy engine creation failed with status: {status}")
             
             print(f"   Status: {status}")
-            time.sleep(5)
+            time.sleep(TIME_DELAY)
         
         raise Exception(f"Timeout waiting for policy engine to be ready")
     
@@ -120,7 +121,7 @@ class PolicyClient:
                 raise Exception(f"Policy creation failed with status: {status}")
             
             print(f"   Status: {status}")
-            time.sleep(5)
+            time.sleep(TIME_DELAY)
         
         raise Exception(f"Timeout waiting for policy to be ready")
     
