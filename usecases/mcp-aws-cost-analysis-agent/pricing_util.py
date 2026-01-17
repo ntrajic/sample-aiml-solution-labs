@@ -35,6 +35,20 @@ def print_pricing_response(response, filename, mode):
     except Exception as e:
         print(f"❌ Error: {e}")
 
+
+def find_descriptions(obj):
+    """Generator that yields all 'description' values"""
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key == 'description':
+                yield value
+            else:
+                yield from find_descriptions(value)
+    elif isinstance(obj, list):
+        for item in obj:
+            yield from find_descriptions(item)
+
+
 @tool
 def get_bedrock_pricing(model_name: str, region: str = 'us-west-2') -> List[Dict]:
     """
@@ -344,7 +358,19 @@ def get_aws_pricing(service_code: str, filters: List[Dict[str, str]] = None, reg
             if not next_token:
                 break
         
-        return all_price_list
+        cleansed_response = []
+
+        for i in all_price_list:
+            itm = json.loads(i)
+            product = itm["product"]
+            description = list(find_descriptions(itm))
+            cleansed_response.append({
+                "product": product,
+                "pricing_term": description
+            })
+        return cleansed_response
+
+        #return all_price_list
         
     except Exception as e:
         print(f"Error fetching pricing data for {service_code}: {str(e)}")
@@ -464,4 +490,27 @@ def get_agentcore_pricing(region_code: str) -> List[str] :
         >>> # Get pricing for us-west-2
         >>> pricing = get_agentcore_pricing('us-west-2')
     """
-    return get_aws_pricing('AmazonBedrockAgentCore', None, region_code)    
+    response = get_aws_pricing('AmazonBedrockAgentCore', None, region_code)
+    cleansed_response = []
+
+    for i in response:
+        itm = json.loads(i)
+        product = itm["product"]
+        description = list(find_descriptions(itm))
+        cleansed_response.append({
+            "product": product,
+            "pricing_term": description
+        })
+    return cleansed_response
+
+
+if __name__ == "__main__":
+    filters = [
+             {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': 't2.micro'},
+             {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'}
+         ]
+    #response = get_aws_pricing('AmazonEC2', filters=filters, region='us-west-2')
+    response = get_attribute_values('AmazonEC2', 'volumeType')
+    print(response)
+
+
