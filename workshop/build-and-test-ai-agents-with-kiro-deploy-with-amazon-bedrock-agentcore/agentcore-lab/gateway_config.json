@@ -1,6 +1,0 @@
-{
-  "id": "refundagentgateway-he41wfnoin",
-  "name": "RefundAgentGateway",
-  "gateway_url": "https://refundagentgateway-he41wfnoin.gateway.bedrock-agentcore.us-west-2.amazonaws.com/mcp",
-  "gateway_arn": "arn:aws:bedrock-agentcore:us-west-2:430990797213:gateway/refundagentgateway-he41wfnoin"
-}
