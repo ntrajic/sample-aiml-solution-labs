@@ -22,7 +22,7 @@ This repository provides AWS users with practical examples and use cases for AI/
 ## Getting Started
 
 1. Clone this repository
-2. Navigate to the specific service folder
+2. Navigate to the specific service folder FOR KIRO.DEV, project:  C:/path-where-installed/aws-samples/sample-aiml-solution-labs/tree/main/workshop/build-and-test-ai-agents-with-kiro-deploy-with-amazon-bedrock-agentcore/     LABS: agentcore-lab consists of: #agent-core-runtime #agent-core-memory #agent-core-identity #agent-core-gateway #agent-core-gateway-policies #agent-core-observability #streamlit-fe
 3. Follow the README instructions in each folder
 4. Ensure you have appropriate AWS credentials configured
 
