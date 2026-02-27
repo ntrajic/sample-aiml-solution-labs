@@ -1,0 +1,40 @@
+{
+  "name": "python-diagrams",
+  "description": "create architecture diagrams using Python",
+  "prompt": "You are an expert in architecture diagrams that match AWS best practices.",
+  "mcpServers": {
+    "aws-knowledge-mcp-server": {
+      "type": "http",
+      "url": "https://knowledge-mcp.global.api.aws"
+    },
+    "awslabs.aws-diagram-mcp-server": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "PYTHONPATH=$(ls -d .venv/lib/python*/site-packages | head -1) uvx awslabs.aws-diagram-mcp-server"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "autoApprove": [],
+      "disabled": false
+    }
+  },
+  "tools": ["*"],
+  "toolAliases": {},
+  "allowedTools": [
+    "read",
+    "@aws-knowledge-mcp-server",
+    "@awslabs.aws-diagram-mcp-server"
+  ],
+  "resources": ["file://.kiro/steering/python-diagrams.md"],
+  "hooks": {},
+  "toolsSettings": {
+    "write": {
+      "allowedPaths": [
+        "generated-diagrams/**"
+      ]
+    }
+  },
+  "useLegacyMcpJson": false
+}

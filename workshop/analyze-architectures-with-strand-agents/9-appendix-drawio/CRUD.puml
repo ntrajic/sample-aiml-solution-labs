@@ -1,0 +1,15 @@
+@startuml
+!define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v20.0/dist
+!include AWSPuml/AWSCommon.puml
+!include AWSPuml/Compute/Compute.puml
+!include AWSPuml/Database/Database.puml
+!include AWSPuml/AWSExperimental.puml
+
+hide footbox
+skinparam style strictuml
+
+participant "$ComputeIMG()\nCompute\n" as compute
+participant "$DatabaseIMG()\nDatabase\n" as database
+
+compute -> database: <$Callout_1> CRUD
+@enduml

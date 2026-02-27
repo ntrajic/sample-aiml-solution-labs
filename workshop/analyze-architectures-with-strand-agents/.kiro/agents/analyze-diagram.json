@@ -1,0 +1,22 @@
+{
+  "name": "analyze-diagram",
+  "description": "analyze architecture diagrams",
+  "prompt": "You are an expert in AWS services and serverless architecture.",
+  "mcpServers": {
+    "aws-knowledge-mcp-server": {
+      "type": "http",
+      "url": "https://knowledge-mcp.global.api.aws"
+    },
+    "drawio-server": {
+      "command": "uv",
+      "args": ["run", "9-appendix-drawio/drawio-server.py"]
+    }
+  },
+  "tools": ["*"],
+  "toolAliases": {},
+  "allowedTools": ["read", "@aws-knowledge-mcp-server", "@drawio-server"],
+  "resources": [],
+  "hooks": {},
+  "toolsSettings": {},
+  "useLegacyMcpJson": false
+}

@@ -1,0 +1,17 @@
+{
+  "terminal.integrated.env.osx": {
+    "WORKSHOP": "${workspaceFolder}",
+    "EDITOR": "code -w"
+  },
+  "terminal.integrated.env.linux": {
+    "WORKSHOP": "${workspaceFolder}",
+    "EDITOR": "code -w"
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.terminal.executeInFileDir": true,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "pyproject.toml": "uv.lock, .pylintrc, .python-version"
+  },
+}

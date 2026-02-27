@@ -1,0 +1,29 @@
+C4Context
+    title Content Publishing System Architecture
+
+    Person_Ext(editor, "Editor", "Creates and processes textbooks")
+    Person(customer, "Customer", "Searches for and views textbooks")
+    
+    System_Boundary(publishing_system, "Content Publishing System") {
+        System(search_microservice, "Search Microservice", "Provides search functionality for content")
+        System(display_microservice, "Display Microservice", "Enables viewing of content")
+        
+        SystemDb(nosql_db, "NoSQL Database", "Stores indexed content for searching")
+        SystemDb(sql_db, "SQL ENTITLEMENTS", "Stores user entitlement information")
+    }
+    
+    System_Ext(shakespeare, "Shakespeare", "The editorial service where textbooks are authored")
+    System_Ext(gutenberg, "Gutenberg", "The publishing service that converts textbooks into output formats")
+    System_Ext(alexandria, "Alexandria", "The library service where published textbooks are stored")
+    
+    Rel(editor, shakespeare, "1. Get Textbook")
+    Rel(shakespeare, gutenberg, "2. Convert to PDF")
+    Rel(gutenberg, alexandria, "3. Save PDF to Library")
+    Rel(alexandria, nosql_db, "4. Index content")
+    
+    Rel(customer, search_microservice, "5. Search for content")
+    Rel(search_microservice, nosql_db, "Query indexed content")
+    
+    Rel(customer, display_microservice, "6. View content")
+    Rel(display_microservice, sql_db, "Check entitlements")
+    Rel(display_microservice, alexandria, "Retrieve content")

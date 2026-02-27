@@ -1,0 +1,17 @@
+{
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "ANTHROPIC_MODEL": "global.anthropic.claude-sonnet-4-20250514-v1:0",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "4096",
+    "MAX_THINKING_TOKENS": "1024"
+  },
+  "permissions": {
+    "allow": [
+      "mcp__aws-knowledge-mcp-server"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "aws-knowledge-mcp-server"
+  ]
+}
