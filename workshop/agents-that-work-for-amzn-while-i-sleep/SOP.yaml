@@ -1,0 +1,255 @@
+sop:
+  version: "1.0"
+  description: >
+    Default developer SOP for the multi-agent ticketing system.
+    Covers the full lifecycle: backlog triage → research → implementation → code review.
+
+  # ── Entry Points ────────────────────────────────────────────────────────────
+  entry_points:
+    - triage_cycle   # Processes BACKLOG tickets: classify → route → implement
+    - review_cycle   # Addresses PR review comments: classify → fix → re-request
+
+  # ── Agent Configuration ──────────────────────────────────────────────────────
+  agents:
+    triage:
+      skill: skills/TRIAGE_SKILL.md
+      max_tickets_per_cycle: 10
+      llm_model: claude-sonnet-4-20250514
+
+    developer:
+      skill: skills/DEVELOPER_SKILL.md
+      max_retries: 3
+      llm_model: claude-sonnet-4-20250514
+
+    reviewer:
+      skill: skills/REVIEWER_SKILL.md
+      max_iterations: 3
+      llm_model: claude-sonnet-4-20250514
+
+    researcher:
+      skill: skills/RESEARCHER_SKILL.md
+      min_options: 2
+      max_options: 5
+      llm_model: claude-sonnet-4-20250514
+
+  # ── Human Gate Configuration ─────────────────────────────────────────────────
+  human_gates:
+    timeout_hours: 48      # Escalate if gate not resolved within 48 hours
+    reminder_hours: 24     # Post reminder comment after 24 hours of silence
+
+  # ── SOP Steps ────────────────────────────────────────────────────────────────
+  steps:
+
+    # ─── TRIAGE CYCLE ──────────────────────────────────────────────────────────
+
+    - id: fetch_backlog
+      name: Fetch JIRA Backlog
+      agent: triage
+      skill: skills/TRIAGE_SKILL.md
+      description: Query JIRA for tickets in Backlog state, up to max_tickets_per_cycle.
+      inputs: []
+      outputs:
+        - field: ticket_ids
+          type: list[str]
+      on_success: classify_ticket
+      on_failure: human_escalation
+
+    - id: classify_ticket
+      name: Classify Ticket
+      agent: triage
+      skill: skills/TRIAGE_SKILL.md
+      description: Classify each ticket as READY, NEEDS_INFO, COMPLEX, or OUT_OF_SCOPE.
+      inputs:
+        - field: ticket_id
+          required: true
+      outputs:
+        - field: classification
+          type: str   # READY | NEEDS_INFO | COMPLEX | OUT_OF_SCOPE
+        - field: rationale
+          type: str
+        - field: new_state
+          type: str
+      on_success: route_by_classification
+      on_failure: human_escalation
+
+    - id: route_by_classification
+      name: Route by Classification
+      agent: sop_engine
+      description: Branch the workflow based on the triage classification.
+      on_condition:
+        - field: classification
+          value: READY
+          then: implement_ticket
+        - field: classification
+          value: COMPLEX
+          then: research_ticket
+        - field: classification
+          value: NEEDS_INFO
+          then: human_gate_needs_info
+        - field: classification
+          value: OUT_OF_SCOPE
+          then: human_gate_out_of_scope
+
+    - id: research_ticket
+      name: Research Complex Ticket
+      agent: researcher
+      skill: skills/RESEARCHER_SKILL.md
+      description: Generate 2-5 implementation options with trade-off analysis.
+      inputs:
+        - field: ticket_id
+          required: true
+        - field: complexity_note
+          required: false
+      outputs:
+        - field: options
+          type: list[dict]
+        - field: recommendation
+          type: str
+        - field: awaiting_human
+          type: bool
+      on_success: human_gate_option_selection
+      on_failure: human_escalation
+
+    - id: human_gate_option_selection
+      name: "[HUMAN GATE] Select Implementation Approach"
+      agent: human
+      description: >
+        Human reviews the researcher's options report in JIRA and replies
+        with their chosen option letter (A, B, C...).
+        Ticket state: Awaiting Decision.
+      gate_id: HG-2
+      on_success: implement_ticket
+      on_failure: human_escalation
+
+    - id: implement_ticket
+      name: Implement Ticket
+      agent: developer
+      skill: skills/DEVELOPER_SKILL.md
+      description: >
+        Create branch, implement changes, run build and tests,
+        commit, and open a Pull Request.
+      inputs:
+        - field: ticket_id
+          required: true
+        - field: classification
+          required: true
+        - field: selected_approach
+          required: false    # Only present if routed via research_ticket
+      outputs:
+        - field: pr_url
+          type: str
+        - field: pr_number
+          type: int
+        - field: branch_name
+          type: str
+        - field: commit_sha
+          type: str
+        - field: test_status
+          type: str   # passed | failed
+      on_success: human_gate_pr_review
+      on_failure: human_escalation
+
+    - id: human_gate_pr_review
+      name: "[HUMAN GATE] Review Pull Request"
+      agent: human
+      description: >
+        Human reviews the PR on GitHub and either approves or leaves
+        review comments. Ticket state: Code Review.
+      gate_id: HG-1
+      on_success: done
+      on_condition:
+        - field: pr_status
+          value: changes_requested
+          then: address_review_comments
+
+    # ─── REVIEW CYCLE ──────────────────────────────────────────────────────────
+
+    - id: address_review_comments
+      name: Address Review Comments
+      agent: reviewer
+      skill: skills/REVIEWER_SKILL.md
+      description: >
+        Classify each review comment (BLOCKING / SUGGESTION / ACKNOWLEDGED),
+        apply changes, push a revised commit, and re-request review.
+      inputs:
+        - field: ticket_id
+          required: true
+        - field: pr_number
+          required: true
+        - field: iteration
+          required: false
+      outputs:
+        - field: resolved_count
+          type: int
+        - field: escalated
+          type: bool
+        - field: status
+          type: str   # revised | escalated | approved
+      on_success: human_gate_pr_review   # Loop back to review gate
+      on_condition:
+        - field: escalated
+          value: "true"
+          then: human_gate_ambiguous_comment
+      on_failure: human_escalation
+
+    # ─── HUMAN GATES (non-blocking states) ────────────────────────────────────
+
+    - id: human_gate_needs_info
+      name: "[HUMAN GATE] Provide Missing Information"
+      agent: human
+      description: >
+        Human updates the ticket with the information requested by the
+        Triage Agent. On next cycle, the ticket re-enters triage.
+      gate_id: HG-3
+      on_success: classify_ticket
+
+    - id: human_gate_out_of_scope
+      name: "[HUMAN GATE] Handle Out-of-Scope Ticket"
+      agent: human
+      description: >
+        Human decides what to do with a ticket classified as out of scope.
+        Options: close, reassign, or override classification.
+      gate_id: HG-5
+      on_success: done
+
+    - id: human_gate_ambiguous_comment
+      name: "[HUMAN GATE] Resolve Ambiguous Review Comment"
+      agent: human
+      description: >
+        Human resolves a review comment that the Reviewer Agent could not
+        address after max_iterations attempts.
+      gate_id: HG-4
+      on_success: address_review_comments
+
+    - id: human_escalation
+      name: "[HUMAN GATE] Agent Failure Escalation"
+      agent: human
+      description: >
+        An agent encountered an unrecoverable error. Human investigates
+        and decides the next action.
+      gate_id: HG-99
+      on_success: classify_ticket
+
+    # ─── TERMINAL ──────────────────────────────────────────────────────────────
+
+    - id: done
+      name: Done
+      agent: sop_engine
+      description: PR merged. Ticket transitions to Done.
+      terminal: true
+
+  # ── Notification Configuration ───────────────────────────────────────────────
+  notifications:
+    on_human_gate:
+      jira_comment: true
+      slack_channel: null       # Set to "#engineering" to enable Slack pings
+    on_error:
+      jira_comment: true
+      slack_channel: null
+
+  # ── Retry Policy ─────────────────────────────────────────────────────────────
+  retry_policy:
+    max_retries: 3
+    backoff_base_seconds: 2
+    backoff_max_seconds: 30
+    retryable_http_codes: [429, 500, 502, 503, 504]
